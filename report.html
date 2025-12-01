@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAG 기반 SPO 탐색기</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4f6fb;
+      color: #222;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .slide {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 24px 28px;
+      margin: 18px auto;
+      max-width: 1100px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e3e8ff;
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .slide-badge {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #4f46e5;
+      background: #e0e7ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    h1, h2, h3 {
+      margin: 4px 0 10px 0;
+    }
+
+    h1 {
+      font-size: 30px;
+      color: #111827;
+    }
+
+    h2 {
+      font-size: 24px;
+      color: #111827;
+    }
+
+    h3 {
+      font-size: 18px;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 4px 0 8px 0;
+      font-size: 14px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #4b5563;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #f3f4ff;
+      color: #4f46e5;
+      font-weight: 500;
+      margin-right: 6px;
+    }
+
+    ul {
+      margin: 6px 0 4px 16px;
+      padding-left: 12px;
+      font-size: 14px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .two-column {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .card {
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .card-strong {
+      background: linear-gradient(135deg, #eef2ff, #fefce8);
+      border-radius: 14px;
+      padding: 14px 16px;
+      border: 1px solid #e0e7ff;
+    }
+
+    .tag-row {
+      margin-top: 8px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4f46e5;
+      font-size: 11px;
+      margin: 2px 4px 2px 0;
+    }
+
+    .highlight {
+      color: #4f46e5;
+      font-weight: 600;
+    }
+
+    .big-quote {
+      font-size: 16px;
+      font-weight: 600;
+      color: #111827;
+      border-left: 4px solid #4f46e5;
+      padding-left: 10px;
+      margin-top: 10px;
+    }
+
+    .icon-text {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .icon {
+      font-size: 18px;
+    }
+
+    hr.divider {
+      border: none;
+      border-top: 1px dashed #e5e7eb;
+      margin: 10px 0;
+    }
+
+    .kpi-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .kpi {
+      flex: 1;
+      min-width: 160px;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .kpi-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .kpi-desc {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Title Slide -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">AI Innovation Challenge</span>
+    </div>
+    <h1>🚀 RAG(검색증강생성) 기반 SPO 탐색기</h1>
+    <p class="subtitle">
+      SPO에 축적된 수많은 감사자료를, 자연어 한 문장으로 빠르게 찾아주는 AI 검색 솔루션
+    </p>
+    <hr class="divider" />
+    <p><strong>과제물 제목</strong> : RAG(검색증강생성) 기반 SPO 탐색기</p>
+    <p><strong>출품 분야</strong> : AI 활용 프로그램 / AI IDEA</p>
+    <p><strong>제출자</strong> : OOO<br>
+       <strong>소속</strong> : PwC Samil – Digital Audit / DX Innovation</p>
+    <div class="tag-row">
+      <span class="tag">RAG</span>
+      <span class="tag">Vector DB(Qdrant)</span>
+      <span class="tag">SPO 검색 자동화</span>
+      <span class="tag">감사 효율화</span>
+    </div>
+  </section>
+
+  <!-- 2. 문제 정의 -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Problem</span>
+      <h2>🔎 감사 현장에서의 자료 탐색 비효율</h2>
+    </div>
+
+    <div class="two-column">
+      <div>
+        <h3>1) SPO 기반 감사자료 관리의 현실</h3>
+        <ul>
+          <li>각 감사팀이 SPO를 활용해 대규모 자료를 관리하지만, <span class="highlight">필요한 파일을 찾는 데 많은 시간 소요</span></li>
+          <li>팀/프로젝트마다 폴더 구조가 달라, 신규 투입 인력은 위치 파악에 어려움</li>
+          <li>파일명·키워드에 크게 의존하는 검색 방식 → 검색 누락 및 중복 자료 증가</li>
+          <li>감사 수행 중 “자료 찾기”가 야근을 유발하는 대표적인 업무 중 하나</li>
+        </ul>
+
+        <h3>2) 고객사 내부회계·결산 대응에서도 동일 Pain Point</h3>
+        <ul>
+          <li>내부회계 용역 대응 시, 필요한 자료를 찾는 데 <strong>정말 큰 시간</strong>이 소요되는 것으로 파악</li>
+          <li>결산·내부통제 관련 자료가 여러 부서·여러 시스템에 흩어져 있음</li>
+          <li>“필요한 자료를 빠르게 찾고 싶다”는 니즈는 <span class="highlight">어느 회사든 공통적으로 존재</span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>📌 핵심 Pain Point 요약</h3>
+        <ul>
+          <li>자료는 충분히 있지만, <strong>찾는 데 시간이 많이 걸리는 문제</strong></li>
+          <li>사람의 기억·노하우에 의존한 비표준적인 검색 프로세스</li>
+          <li>감사팀·고객사 모두에게 공통적으로 발생하는 구조적 비효율</li>
+        </ul>
+        <p class="muted">
+          👉 이 문제를 해결하면, 감사 품질·속도·조직 학습효과까지 모두 동시에 개선 가능
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 솔루션 개요 -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Solution</span>
+      <h2>🤖 RAG 기반 SPO 자연어 탐색기</h2>
+    </div>
+
+    <p class="big-quote">
+      “SPO 안의 모든 자료를, <span class="highlight">자연어 한 문장</span>으로 찾아줍니다.”
+    </p>
+
+    <div class="two-column">
+      <div class="card-strong">
+        <h3>① SPO 문서 → 벡터 DB(Qdrant)화</h3>
+        <ul>
+          <li>SPO에 저장된 문서의 <strong>본문, 파일명, 메타데이터</strong> 추출</li>
+          <li>임베딩(Embedding)을 통해 의미 기반 검색이 가능한 벡터로 변환</li>
+          <li>Qdrant Vector DB에 저장하여, 대용량에도 빠른 검색 성능 확보</li>
+        </ul>
+        <hr class="divider" />
+        <h3>② RAG 기반 자연어 질의</h3>
+        <ul>
+          <li>사용자가 “<em>작년 재고자산 평가 관련 보고서 파일 찾아줘</em>”처럼 자연어로 질문</li>
+          <li>LLM이 질의를 이해하고, Qdrant에서 관련 문서를 의미 기반으로 검색</li>
+          <li>가장 관련도가 높은 파일 후보군과 함께, 요약 정보·메타데이터 제공</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>③ SPO URL 연동 & 다운로드</h3>
+        <ul>
+          <li>검색된 문서의 <strong>SPO URL을 즉시 제공</strong></li>
+          <li>사용자는 결과 리스트에서 원하는 문서를 클릭 → 바로 열기/다운로드</li>
+          <li>별도의 폴더 탐색 없이, <span class="highlight">“질문 → 파일”로 바로 연결</span></li>
+        </ul>
+
+        <hr class="divider" />
+
+        <h3>🧩 구현 요소</h3>
+        <div class="icon-text">
+          <span class="icon">📂</span>
+          <span>SPO Connector (문서·메타데이터 추출)</span>
+        </div>
+        <div class="icon-text">
+          <span class="icon">🧠</span>
+          <span>Embedding + Qdrant Vector DB</span>
+        </div>
+        <div class="icon-text">
+          <span class="icon">💬</span>
+          <span>LLM 기반 RAG 검색 파이프라인</span>
+        </div>
+        <div class="icon-text">
+          <span class="icon">🔗</span>
+          <span>SPO URL Resolver & 다운로드 연동</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 기술 아키텍처 -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Architecture</span>
+      <h2>🧩 기술 아키텍처 Overview</h2>
+    </div>
+
+    <p class="muted">
+      *이 슬라이드는 PPT에서 다이어그램으로 시각화해도 좋고, 아래 텍스트를 설명용으로 그대로 활용해도 됩니다.*
+    </p>
+
+    <div class="two-column">
+      <div class="card">
+        <h3>데이터 플로우</h3>
+        <ul>
+          <li><strong>SPO Connector</strong><br>문서 목록·경로·권한 정보와 함께, 파일 본문 및 메타데이터 추출</li>
+          <li><strong>Embedding Pipeline</strong><br>텍스트 전처리 후, 임베딩 생성 및 Qdrant에 저장</li>
+          <li><strong>Qdrant Vector DB</strong><br>문서별 벡터 + 메타데이터 관리, 필터·조건 검색 지원</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>검색 & 응답 플로우</h3>
+        <ul>
+          <li><strong>RAG Engine</strong><br>자연어 질의 분석 → 벡터 검색 → LLM 응답 생성</li>
+          <li><strong>SPO URL Resolver</strong><br>검색된 문서의 SPO 실제 URL/다운로드 경로 매핑</li>
+          <li><strong>UI Layer</strong><br>Web, Teams Bot 등에서 챗봇 형식으로 질의/응답 제공</li>
+        </ul>
+        <p class="muted">
+          👉 “Where is it?”를 고민하는 시간을, “What does it mean?”을 고민하는 시간으로 전환
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 기대 효과 -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Impact</span>
+      <h2>🎯 기대 효과</h2>
+    </div>
+
+    <div class="two-column">
+      <div class="card-strong">
+        <h3>ET(Engagement Team) 관점</h3>
+        <ul>
+          <li>자료 탐색에 걸리는 시간 <strong>단축</strong> 기대</li>
+          <li>신규 인력도 폴더 구조를 몰라도, 동일한 검색 품질 확보</li>
+          <li>“어디에 뭐가 있는지 아는 사람” 의존도 감소 → 업무 표준화</li>
+        </ul>
+
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="kpi-label">Time Saving</div>
+            <div class="kpi-value">70%+</div>
+            <div class="kpi-desc">자료 탐색 시간 절감</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">Onboarding</div>
+            <div class="kpi-value">단축</div>
+            <div class="kpi-desc">신규 투입 인력 Ramp-up 가속</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Digital Audit & 외부 시장 관점</h3>
+        <ul>
+          <li>감사 문서 탐색의 가시성 확대로, <span class="highlight">Evidence Tracking, Exception Handling</span> 등 추가 확장 가능</li>
+          <li>제조·금융·서비스 등 다양한 산업군에 적용 가능한 <strong>내부회계·결산 자료 탐색 솔루션</strong>으로 발전 가능</li>
+          <li>감사팀 내부 활용을 넘어, <strong>고객사 대상 솔루션/서비스로 상용화</strong>할 수 있는 여지</li>
+        </ul>
+        <p class="muted">
+          👉 “SPO RAG 탐색기”는 사내 효율화 도구이자, 잠재적인 대외 서비스 아이템
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 차별점 -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Differentiation</span>
+      <h2>🔥 차별화 포인트</h2>
+    </div>
+
+    <div class="two-column">
+      <div class="card">
+        <h3>기존 방식의 한계</h3>
+        <ul>
+          <li>키워드 중심 검색 → 파일명/태그에 과도한 의존</li>
+          <li>SPO 기본 검색 기능만으로는 전체 텍스트 기반 정교한 검색이 어려움</li>
+          <li>일반 LLM은 사내 실제 문서에 직접 접근할 수 없어, “진짜 파일”을 바로 제공하지 못함</li>
+        </ul>
+      </div>
+
+      <div class="card-strong">
+        <h3>RAG 기반 SPO 탐색기의 강점</h3>
+        <ul>
+          <li><strong>의미 기반(Semantic) 검색</strong>으로, 표현이 달라도 동일 주제의 문서를 찾아줌</li>
+          <li><strong>Qdrant 기반 벡터 DB</strong>로 대용량 SPO 문서에도 확장성 확보</li>
+          <li><strong>SPO URL 바로 연동</strong>으로, “검색 결과 → 즉시 다운로드”까지 한 번에 연결</li>
+        </ul>
+        <p class="muted">
+          👉 단순 “검색”을 넘어, <strong>실제 작업에 바로 쓸 수 있는 결과</strong>를 제공하는 것이 핵심
+        </p>
+      </div>
+    </div>
+  </section>
+<!-- 7. 확장 로드맵 -->
+<section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Roadmap</span>
+      <h2>📈 확장 로드맵</h2>
+    </div>
+  
+    <div class="card">
+      <h3>1) 사용자 경험 개선</h3>
+      <ul>
+        <li>검색 결과를 더 직관적으로 보여주는 프런트엔드(UI) 추가</li>
+        <li>문서 미리보기, 태그 표시, 카테고리별 정렬 등 편의 기능 제공</li>
+      </ul>
+  
+      <h3>2) 간단한 기능 고도화</h3>
+      <ul>
+        <li>파일 다운로드 동작 안정화 및 접근 권한 확인 기능 개선</li>
+        <li>자주 찾는 자료를 빠르게 불러올 수 있는 즐겨찾기 기능 추가</li>
+      </ul>
+  
+      <h3>3) 내부 활용도 확대</h3>
+      <ul>
+        <li>각 감사팀/ET에 맞는 템플릿형 검색 UI 제공</li>
+        <li>SPO 외 다른 내부 자료원과의 연동 검토</li>
+      </ul>
+    </div>
+  
+    <p class="big-quote">
+      “필요한 기능을 가볍게 추가하면서, 점진적으로 더 쓰기 좋은 형태로 개선해 나가는 방향입니다.”
+    </p>
+  </section>
+</body>
+</html>

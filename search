@@ -1,0 +1,35 @@
+def search_spo_docs(query: str, top_k: int = 5):
+    query_vec = embed_texts([query])[0]
+
+    results = client.search(
+        collection_name="spo_docs",
+        query_vector=query_vec,
+        limit=top_k,
+        with_payload=True,
+    )
+
+    return results
+
+def build_answer_with_sources(query: str):
+    hits = search_spo_docs(query, top_k=5)
+
+    # 1) context 텍스트만 뽑아서 LLM에 prompt
+    contexts = [hit.payload["text"] for hit in hits]
+    llm_answer = call_llm(query, contexts)  # 너가 쓰는 LangChain/LangGraph 노드
+
+    # 2) 프론트에 넘겨줄 “다운로드/열기 가능한 소스 정보”
+    sources = []
+    for hit in hits:
+        md = hit.payload.get("metadata", {})
+        sp = md.get("sharepoint", {})
+        sources.append({
+            "file_title": md.get("title"),
+            "section_title": md.get("section_title"),
+            "chunk_index": md.get("chunk_index"),
+            "download_url": sp.get("web_url"),  # 프론트에서 이걸로 버튼 만들기
+        })
+
+    return {
+        "answer": llm_answer,
+        "sources": sources,
+    }

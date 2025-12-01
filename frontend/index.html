@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG-SPO 문서 검색</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .search-button {
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .options {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .options input[type="number"] {
+            width: 60px;
+            padding: 5px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .answer-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        .answer-box h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .answer-box h2::before {
+            content: "💬";
+            font-size: 1.2em;
+        }
+
+        .answer-text {
+            color: #555;
+            line-height: 1.8;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+
+        .sources-box {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .sources-box h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sources-box h2::before {
+            content: "📚";
+            font-size: 1.2em;
+        }
+
+        .source-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #667eea;
+        }
+
+        .source-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .source-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .source-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 18px;
+            flex: 1;
+        }
+
+        .source-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .source-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .source-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-download {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-view {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-view:hover {
+            background: #f0f2ff;
+        }
+
+        .error-box {
+            display: none;
+            background: #fff3f3;
+            border: 2px solid #ff6b6b;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: #d63031;
+        }
+
+        .error-box.active {
+            display: block;
+        }
+
+        .error-box h3 {
+            margin-bottom: 10px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 18px;
+        }
+
+        @media (max-width: 768px) {
+            .search-input-group {
+                flex-direction: column;
+            }
+
+            .search-button {
+                width: 100%;
+            }
+
+            .options {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .source-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .source-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 RAG-SPO 문서 검색</h1>
+            <p>SharePoint 문서를 검색하고 AI 답변을 받아보세요</p>
+        </div>
+
+        <div class="search-box">
+            <div class="search-input-group">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="질문을 입력하세요... (예: 프로젝트 일정은?)"
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button id="searchButton" class="search-button" onclick="performSearch()">
+                    검색
+                </button>
+            </div>
+            <div class="options">
+                <label>
+                    결과 개수:
+                    <input type="number" id="topK" value="5" min="1" max="20">
+                </label>
+            </div>
+        </div>
+
+        <div id="errorBox" class="error-box">
+            <h3>⚠️ 오류 발생</h3>
+            <p id="errorMessage"></p>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>검색 중...</p>
+        </div>
+
+        <div id="results" class="results">
+            <div class="answer-box">
+                <h2>답변</h2>
+                <div id="answerText" class="answer-text"></div>
+            </div>
+
+            <div class="sources-box">
+                <h2>관련 문서</h2>
+                <div id="sourcesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                performSearch();
+            }
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const topK = parseInt(document.getElementById('topK').value);
+
+            if (!query) {
+                showError('검색어를 입력해주세요.');
+                return;
+            }
+
+            // UI 초기화
+            hideError();
+            showLoading();
+            hideResults();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/rag/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        top_k: topK
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Search error:', error);
+                showError(`검색 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function displayResults(data) {
+            // 답변 표시
+            const answerText = document.getElementById('answerText');
+            answerText.textContent = data.answer;
+
+            // 소스 목록 표시
+            const sourcesList = document.getElementById('sourcesList');
+            sourcesList.innerHTML = '';
+
+            if (data.sources && data.sources.length > 0) {
+                data.sources.forEach((source, index) => {
+                    const sourceItem = createSourceItem(source, index + 1);
+                    sourcesList.appendChild(sourceItem);
+                });
+            } else {
+                sourcesList.innerHTML = '<div class="no-results">관련 문서를 찾을 수 없습니다.</div>';
+            }
+
+            showResults();
+        }
+
+        function createSourceItem(source, index) {
+            const div = document.createElement('div');
+            div.className = 'source-item';
+
+            const score = (source.score * 100).toFixed(1);
+
+            div.innerHTML = `
+                <div class="source-header">
+                    <div class="source-title">${index}. ${source.file_title}</div>
+                    <div class="source-score">관련도: ${score}%</div>
+                </div>
+                <div class="source-meta">
+                    청크 인덱스: ${source.chunk_index}
+                    ${source.document_id ? ` | 문서 ID: ${source.document_id}` : ''}
+                </div>
+                <div class="source-actions">
+                    <button class="btn btn-download" onclick="downloadDocument('${source.document_id}', '${source.file_title}')">
+                        📥 다운로드
+                    </button>
+                    ${source.download_url ? `
+                        <a href="${source.download_url}" target="_blank" class="btn btn-view">
+                            🔗 SharePoint에서 보기
+                        </a>
+                    ` : ''}
+                </div>
+            `;
+
+            return div;
+        }
+
+        async function downloadDocument(documentId, fileName) {
+            if (!documentId) {
+                showError('문서 ID가 없습니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/rag/download/${documentId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Download failed: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName || `document_${documentId}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                console.log(`Downloaded: ${fileName}`);
+            } catch (error) {
+                console.error('Download error:', error);
+                showError(`다운로드 중 오류가 발생했습니다: ${error.message}`);
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function showResults() {
+            document.getElementById('results').classList.add('active');
+        }
+
+        function hideResults() {
+            document.getElementById('results').classList.remove('active');
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorBox.classList.add('active');
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').classList.remove('active');
+        }
+
+        // 페이지 로드 시 API 연결 테스트
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    console.log('✅ API 서버 연결 성공');
+                } else {
+                    console.warn('⚠️ API 서버 응답 이상');
+                }
+            } catch (error) {
+                console.error('❌ API 서버 연결 실패:', error);
+                showError('API 서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.');
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,43 @@
+# FastAPI and ASGI server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+pydantic-settings==2.1.0
+
+# Vector database
+qdrant-client==1.7.3
+
+# HTTP client for Microsoft Graph API
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+python-docx==1.1.0
+
+PyPDF2==3.0.1
+# 또는
+pdfplumber==0.10.3
+
+
+# LangChain and OpenAI (required for LLM)
+langchain==0.3.13
+langchain-openai==0.2.14
+langchain-core==0.3.28
+openai==1.58.1
+
+# Optional: Alternative embedding models (uncomment when implementing)
+# sentence-transformers==2.3.1
+# transformers==4.37.0
+
+# Optional: Document parsing (uncomment when implementing)
+# python-docx==1.1.0
+# PyPDF2==3.0.1
+# beautifulsoup4==4.12.3
+
+# Development dependencies (optional)
+# pytest==8.0.0
+# pytest-asyncio==0.23.4
+# black==24.1.1
+# ruff==0.2.0
+

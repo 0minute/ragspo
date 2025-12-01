@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>RAG 기반 SPO 탐색기 - 기술 아키텍처</title>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4f6fb;
+      margin: 0;
+      padding: 24px;
+    }
+
+    .slide {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 24px 28px;
+      margin: 0 auto;
+      max-width: 1100px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e3e8ff;
+    }
+
+    .slide-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .slide-badge {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+      color: #4f46e5;
+      background: #e0e7ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    h2 {
+      font-size: 24px;
+      color: #111827;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 18px;
+    }
+
+    /* 다이어그램 공통 스타일 */
+    .arch-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 14px 0 6px 4px;
+    }
+
+    .lane {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .node {
+      min-width: 150px;
+      max-width: 220px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.06);
+      text-align: center;
+    }
+
+    .node-strong {
+      background: linear-gradient(135deg, #eef2ff, #fefce8);
+      border: 1px solid #e0e7ff;
+    }
+
+    .node-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 2px;
+    }
+
+    .node-sub {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .arrow {
+      font-size: 20px;
+      color: #9ca3af;
+    }
+
+    .muted {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 10px;
+    }
+
+    .row-split {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+  </style>
+</head>
+<body>
+  <section class="slide">
+    <div class="slide-header">
+      <span class="slide-badge">Architecture</span>
+      <h2>🧩 기술 아키텍처 Overview</h2>
+    </div>
+    <p class="subtitle">
+      SPO에서 문서를 가져와 임베딩 → Qdrant에 저장 → RAG Engine으로 검색 → SPO URL을 프런트에 넘기는 일련의 흐름을 한눈에 표현한 구조도입니다.
+    </p>
+
+    <!-- 1. 데이터 수집 & 인덱싱 레이어 -->
+    <div class="arch-section-title">1. Data Ingestion & Indexing Layer</div>
+    <div class="lane">
+      <div class="node">
+        <div class="node-title">SPO</div>
+        <div class="node-sub">문서 · 폴더 구조<br/>접근 권한 · 메타데이터</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node">
+        <div class="node-title">SPO Connector</div>
+        <div class="node-sub">파일 목록 수집<br/>본문 · 메타데이터 추출</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node">
+        <div class="node-title">전처리 / Chunking</div>
+        <div class="node-sub">텍스트 정제<br/>문단 단위 분할</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node node-strong">
+        <div class="node-title">Embedding 생성</div>
+        <div class="node-sub">LLM Embedding 모델로<br/>벡터화</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node node-strong">
+        <div class="node-title">Qdrant</div>
+        <div class="node-sub">Vector DB + Metadata<br/>유형, 회사, 연도 필터링</div>
+      </div>
+    </div>
+
+    <!-- 2. 검색 & RAG 레이어 -->
+    <div class="arch-section-title">2. Query & RAG Processing Layer</div>
+    <div class="lane">
+      <div class="node">
+        <div class="node-title">사용자 쿼리</div>
+        <div class="node-sub">“작년 재고자산 평가보고서 파일 찾아줘”</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node">
+        <div class="node-title">API / Backend</div>
+        <div class="node-sub">인증 · 로깅<br/>요청 라우팅</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node node-strong">
+        <div class="node-title">RAG Engine</div>
+        <div class="node-sub">쿼리 분석 · 확장<br/>Qdrant 벡터 검색<br/>컨텍스트 구성</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node">
+        <div class="node-title">LLM</div>
+        <div class="node-sub">관련 문서 요약<br/>결과 정리</div>
+      </div>
+    </div>
+
+    <!-- 3. 파일 URL 매핑 & UI 레이어 -->
+    <div class="arch-section-title">3. URL Mapping & UI Layer</div>
+    <div class="lane">
+      <div class="node">
+        <div class="node-title">SPO URL Resolver</div>
+        <div class="node-sub">검색된 문서의<br/>실제 SPO 링크 매핑</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node node-strong">
+        <div class="node-title">검색 결과 객체</div>
+        <div class="node-sub">제목 · 요약 · 메타데이터<br/>SPO 다운로드 URL</div>
+      </div>
+      <div class="arrow">➡</div>
+      <div class="node">
+        <div class="node-title">Frontend / UI</div>
+        <div class="node-sub">Web · Teams Bot · 내부 대시보드<br/>리스트 · 필터 · 다운로드 버튼</div>
+      </div>
+    </div>
+
+    <p class="muted">
+      👉 PPT에서는 이 구조를 그대로 박스/화살표 도형으로 옮기면, “실제 시스템 설계도가 있는” 슬라이드처럼 보입니다.
+    </p>
+  </section>
+</body>
+</html>
