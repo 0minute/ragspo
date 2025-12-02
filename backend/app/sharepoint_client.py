@@ -5,6 +5,8 @@ This module provides functions to interact with SharePoint Online via Microsoft 
 
 from typing import Any, Dict, List, Optional
 
+import io
+
 import requests
 
 from app.config import get_settings
@@ -78,24 +80,7 @@ def list_sharepoint_documents(site_id: Optional[str] = None) -> List[Dict[str, A
     if settings.demo_mode:
         print("[DEMO MODE] Returning sample documents")
         return [
-            {
-                "id": "doc_demo_1",
-                "name": "프로젝트_계획서.docx",
-                "web_url": "https://demo.sharepoint.com/sites/demo/프로젝트_계획서.docx",
-                "size": 45678,
-            },
-            {
-                "id": "doc_demo_2",
-                "name": "기술_문서.pdf",
-                "web_url": "https://demo.sharepoint.com/sites/demo/기술_문서.pdf",
-                "size": 123456,
-            },
-            {
-                "id": "doc_demo_3",
-                "name": "회의록_2025.txt",
-                "web_url": "https://demo.sharepoint.com/sites/demo/회의록_2025.txt",
-                "size": 8901,
-            },
+
         ]
     
     # Real implementation: Graph API call to list documents
@@ -142,6 +127,108 @@ def list_sharepoint_documents(site_id: Optional[str] = None) -> List[Dict[str, A
         raise Exception(f"Failed to list SharePoint documents: {e}")
 
 
+def _extract_text_from_file(
+    file_bytes: bytes,
+    file_name: str,
+    content_type: Optional[str] = None,
+) -> str:
+    """Extract text content from a file.
+
+    This helper function supports multiple file formats:
+
+    - Plain text files (e.g., .txt)
+    - Microsoft Word documents (.docx)
+    - PDF documents (.pdf, text-based)
+    - Excel workbooks (.xlsx, .xlsm, .xltx, .xltm)
+
+    Args:
+        file_bytes: Raw file content as bytes.
+        file_name: Name of the file (used to infer extension).
+        content_type: MIME type of the file, if available.
+
+    Returns:
+        Extracted text content as a string.
+    """
+    # Normalize helpers
+    lower_name = file_name.lower()
+    content_type = (content_type or "").lower()
+
+    # PDF files
+    if lower_name.endswith(".pdf") or "pdf" in content_type:
+        try:
+            from PyPDF2 import PdfReader
+
+            pdf_reader = PdfReader(io.BytesIO(file_bytes))
+            texts: List[str] = []
+            for page in pdf_reader.pages:
+                page_text = page.extract_text() or ""
+                if page_text.strip():
+                    texts.append(page_text)
+            return "\n\n".join(texts).strip()
+        except ImportError as exc:
+            raise ImportError(
+                "PyPDF2 is required for PDF text extraction. "
+                "Install it with 'pip install PyPDF2'."
+            ) from exc
+        except Exception as exc:  # pragma: no cover - fallback path
+            print(f"[WARN] PDF text extraction failed, falling back to raw text: {exc}")
+
+    # Word documents (.docx)
+    if lower_name.endswith(".docx") or "wordprocessingml.document" in content_type:
+        try:
+            from docx import Document
+
+            document = Document(io.BytesIO(file_bytes))
+            paragraphs: List[str] = []
+            for paragraph in document.paragraphs:
+                text = paragraph.text.strip()
+                if text:
+                    paragraphs.append(text)
+            return "\n\n".join(paragraphs).strip()
+        except ImportError as exc:
+            raise ImportError(
+                "python-docx is required for DOCX text extraction. "
+                "Install it with 'pip install python-docx'."
+            ) from exc
+        except Exception as exc:  # pragma: no cover - fallback path
+            print(f"[WARN] DOCX text extraction failed, falling back to raw text: {exc}")
+
+    # Excel workbooks (.xlsx, .xlsm, .xltx, .xltm)
+    if lower_name.endswith((".xlsx", ".xlsm", ".xltx", ".xltm")) or "spreadsheetml" in content_type:
+        try:
+            from openpyxl import load_workbook
+
+            workbook = load_workbook(io.BytesIO(file_bytes), data_only=True)
+            texts = []
+
+            for sheet in workbook.worksheets:
+                texts.append(f"# 시트: {sheet.title}")
+                for row in sheet.iter_rows(values_only=True):
+                    row_values = [
+                        str(value).strip()
+                        for value in row
+                        if value not in (None, "")
+                    ]
+                    if row_values:
+                        texts.append(" \t ".join(row_values))
+
+            return "\n".join(texts).strip()
+        except ImportError as exc:
+            raise ImportError(
+                "openpyxl is required for Excel text extraction. "
+                "Install it with 'pip install openpyxl'."
+            ) from exc
+        except Exception as exc:  # pragma: no cover - fallback path
+            print(f"[WARN] Excel text extraction failed, falling back to raw text: {exc}")
+
+    # Fallback: treat as UTF-8 text (e.g., .txt)
+    try:
+        return file_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        # Fallback to Latin-1 with replacement to avoid errors
+        return file_bytes.decode("latin-1", errors="replace")
+
+
 def get_document_content(document_id: str) -> str:
     """Retrieve the text content of a SharePoint document.
     
@@ -151,12 +238,20 @@ def get_document_content(document_id: str) -> str:
     Returns:
         str: Text content extracted from the document.
         
+    Note:
+        This function now supports basic text extraction for:
+
+        - Plain text files (.txt)
+        - Microsoft Word documents (.docx)
+        - PDF documents (.pdf, text-based)
+
+        For image-based or scanned PDFs, additional OCR processing
+        would be required (not implemented here).
+
     TODO:
-        - Implement Graph API call to download document
-        - Add support for different file formats (docx, pdf, txt, etc.)
-        - Implement text extraction logic for binary formats
-        - Handle large documents efficiently
-        - Add error handling for inaccessible documents
+        - Handle very large documents more efficiently (streaming)
+        - Add OCR support for scanned PDFs
+        - Improve error handling and logging
     """
     settings = get_settings()
     token = get_access_token()
@@ -238,11 +333,17 @@ def get_document_content(document_id: str) -> str:
     
     try:
         # Get document metadata including download URL
-        metadata_url = f"https://graph.microsoft.com/v1.0/sites/{settings.sharepoint_site_id}/drive/items/{document_id}"
+        metadata_url = (
+            f"https://graph.microsoft.com/v1.0/sites/"
+            f"{settings.sharepoint_site_id}/drive/items/{document_id}"
+        )
         metadata_response = requests.get(metadata_url, headers=headers)
         metadata_response.raise_for_status()
-        
-        download_url = metadata_response.json().get("@microsoft.graph.downloadUrl")
+
+        item = metadata_response.json()
+        download_url = item.get("@microsoft.graph.downloadUrl")
+        file_name = item.get("name", f"{document_id}.bin")
+        content_type = item.get("file", {}).get("mimeType", "")
         
         if not download_url:
             raise Exception(f"No download URL available for document {document_id}")
@@ -251,17 +352,17 @@ def get_document_content(document_id: str) -> str:
         print(f"[Graph API] Downloading document {document_id}...")
         file_response = requests.get(download_url)
         file_response.raise_for_status()
-        
-        # TODO: Implement proper text extraction based on file type
-        # For now, return raw content as text (works for .txt files)
-        # For production, add support for .docx, .pdf, etc. using libraries like:
-        # - python-docx for Word documents
-        # - PyPDF2 or pdfplumber for PDFs
-        # - beautifulsoup4 for HTML
-        
-        content = file_response.text
-        print(f"[Graph API] Downloaded {len(content)} characters")
-        return content
+
+        # Extract text based on file type
+        file_bytes = file_response.content
+        text_content = _extract_text_from_file(
+            file_bytes=file_bytes,
+            file_name=file_name,
+            content_type=content_type or file_response.headers.get("Content-Type"),
+        )
+
+        print(f"[Graph API] Downloaded {len(file_bytes)} bytes, extracted {len(text_content)} characters")
+        return text_content
         
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Failed to get document content: {e}")
@@ -287,30 +388,6 @@ def get_document_metadata(document_id: str) -> Dict[str, Any]:
     # Demo mode: return realistic metadata
     if settings.demo_mode:
         demo_metadata = {
-            "doc_demo_1": {
-                "id": "doc_demo_1",
-                "name": "프로젝트_계획서.docx",
-                "web_url": "https://demo.sharepoint.com/sites/demo/프로젝트_계획서.docx",
-                "download_url": "https://demo.sharepoint.com/download/doc_demo_1",
-                "modified_date": "2025-01-15T09:30:00Z",
-                "author": "김철수",
-            },
-            "doc_demo_2": {
-                "id": "doc_demo_2",
-                "name": "기술_문서.pdf",
-                "web_url": "https://demo.sharepoint.com/sites/demo/기술_문서.pdf",
-                "download_url": "https://demo.sharepoint.com/download/doc_demo_2",
-                "modified_date": "2025-01-20T14:15:00Z",
-                "author": "이영희",
-            },
-            "doc_demo_3": {
-                "id": "doc_demo_3",
-                "name": "회의록_2025.txt",
-                "web_url": "https://demo.sharepoint.com/sites/demo/회의록_2025.txt",
-                "download_url": "https://demo.sharepoint.com/download/doc_demo_3",
-                "modified_date": "2025-01-15T16:00:00Z",
-                "author": "박민수",
-            },
         }
         
         return demo_metadata.get(document_id, {
