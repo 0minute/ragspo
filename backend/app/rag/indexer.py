@@ -4,18 +4,22 @@ This module handles the full indexing pipeline: document retrieval, chunking,
 embedding, and storage in the vector database.
 """
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 from uuid import uuid4
 
 from app.config import get_settings
 from app.embeddings import embed_texts
 from app.qdrant_client import get_qdrant_client
 from app.rag.chunking import split_document_with_metadata
-from app.sharepoint_client import get_document_content, get_document_metadata
+from app.sharepoint_client import (
+    get_document_content,
+    get_document_metadata,
+    list_sharepoint_documents,
+)
 from qdrant_client.models import PointStruct
 
 
-def index_sharepoint_document(document_id: str) -> Dict[str, int]:
+def index_sharepoint_document(document_id: str, site_id: Optional[str] = None) -> Dict[str, int]:
     """Index a SharePoint document into Qdrant vector database.
     
     This function:
@@ -26,6 +30,8 @@ def index_sharepoint_document(document_id: str) -> Dict[str, int]:
     
     Args:
         document_id: Unique identifier of the SharePoint document.
+        site_id: Optional SharePoint site identifier. If provided,
+            this site ID will be used instead of the default configuration.
         
     Returns:
         Dictionary containing indexing statistics:
@@ -42,7 +48,7 @@ def index_sharepoint_document(document_id: str) -> Dict[str, int]:
         - Handle large documents with batch processing
     """
     settings = get_settings()
-    
+
     # Step 1: Get document content and metadata from SharePoint
     print(f"Retrieving document {document_id} from SharePoint...")
     document_content = get_document_content(document_id)
@@ -100,23 +106,27 @@ def index_sharepoint_document(document_id: str) -> Dict[str, int]:
     return {"chunks_indexed": len(points), "document_id": document_id}
 
 
-def index_all_sharepoint_documents() -> Dict[str, int]:
+def index_all_sharepoint_documents(site_id: Optional[str] = None) -> Dict[str, int]:
     """Index all documents from SharePoint into Qdrant.
     
+    Args:
+        site_id: Optional SharePoint site identifier. If provided,
+            indexing will be performed for that site; otherwise the
+            default site from configuration is used.
+
     Returns:
         Dictionary containing indexing statistics:
         - 'total_documents': Total number of documents processed
         - 'total_chunks': Total number of chunks indexed
-        
+
     TODO:
         - Implement parallel processing for multiple documents
         - Add progress tracking
         - Handle failures gracefully (continue with other documents)
     """
-    from app.sharepoint_client import list_sharepoint_documents
-    
+
     print("Listing all SharePoint documents...")
-    documents = list_sharepoint_documents()
+    documents = list_sharepoint_documents(site_id=site_id)
     
     total_chunks = 0
     successful_documents = 0
