@@ -3,8 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG-SPO 문서 검색</title>
+    <title>Point Search 문서 검색</title>
     <style>
+        :root {
+            --primary: #f97316;          /* 메인 주황 */
+            --primary-dark: #ea580c;     /* 진한 주황 */
+            --primary-soft: #fff7ed;     /* 옅은 주황 배경 */
+            --primary-border: #fed7aa;   /* 연한 주황 보더 */
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --bg-page: #f5f5f7;
+            --card-shadow: 0 14px 35px rgba(15, 23, 42, 0.12);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,116 +24,214 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 16px 40px;
+            background:
+                radial-gradient(circle at top left, rgba(251, 146, 60, 0.25), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(248, 250, 252, 1), #f3f4f6);
+            color: var(--text-main);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
+        /* 헤더 영역 */
         .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
+            text-align: left;
+            color: var(--text-main);
+            margin-bottom: 24px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: var(--primary-soft);
+            border: 1px solid var(--primary-border);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 700;
+            font-size: 2.1em;
+            margin-bottom: 6px;
+            font-weight: 750;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header h1 span.icon {
+            font-size: 1.3em;
         }
 
         .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
+            font-size: 0.98em;
+            color: var(--text-sub);
         }
 
+        /* 검색 박스 */
         .search-box {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            margin-bottom: 30px;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 22px 22px 18px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .search-box::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border-top: 3px solid rgba(249, 115, 22, 0.9);
+            opacity: 0.9;
+            pointer-events: none;
         }
 
         .search-input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
         }
 
         .search-input {
             flex: 1;
-            padding: 15px 20px;
-            font-size: 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
+            padding: 13px 16px;
+            font-size: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
             outline: none;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+            background-color: #f9fafb;
+        }
+
+        .search-input::placeholder {
+            color: #9ca3af;
         }
 
         .search-input:focus {
-            border-color: #667eea;
+            border-color: var(--primary);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.1);
         }
 
         .search-button {
-            padding: 15px 40px;
-            font-size: 16px;
+            padding: 0 28px;
+            min-width: 110px;
+            font-size: 15px;
             font-weight: 600;
             color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .search-button::before {
+            content: "🔍";
+            font-size: 1.05em;
         }
 
         .search-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(248, 113, 22, 0.4);
+            filter: brightness(1.02);
         }
 
         .search-button:active {
             transform: translateY(0);
+            box-shadow: none;
         }
 
         .search-button:disabled {
-            background: #ccc;
+            background: #e5e7eb;
             cursor: not-allowed;
-            transform: none;
+            box-shadow: none;
+            filter: none;
         }
 
         .options {
             display: flex;
             gap: 20px;
             align-items: center;
+            margin-top: 4px;
         }
 
         .options label {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #666;
-            font-size: 14px;
+            color: #6b7280;
+            font-size: 13px;
         }
 
         .options input[type="number"] {
-            width: 60px;
-            padding: 5px 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
+            width: 64px;
+            padding: 6px 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
             text-align: center;
+            font-size: 13px;
+            background: #f9fafb;
+            outline: none;
+            transition: border-color 0.2s, background-color 0.2s;
         }
 
+        .options input[type="number"]:focus {
+            border-color: var(--primary);
+            background-color: #ffffff;
+        }
+
+        /* 에러 박스 */
+        .error-box {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            color: #b91c1c;
+            font-size: 14px;
+        }
+
+        .error-box.active {
+            display: block;
+        }
+
+        .error-box h3 {
+            margin-bottom: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 로딩 */
         .loading {
             display: none;
             text-align: center;
-            padding: 40px;
-            color: #667eea;
-            font-size: 18px;
+            padding: 30px 10px;
+            color: var(--primary-dark);
+            font-size: 15px;
         }
 
         .loading.active {
@@ -130,13 +239,13 @@
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            width: 36px;
+            height: 36px;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto 12px;
         }
 
         @keyframes spin {
@@ -144,6 +253,7 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* 결과 영역 */
         .results {
             display: none;
         }
@@ -152,21 +262,24 @@
             display: block;
         }
 
-        .answer-box {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            margin-bottom: 30px;
+        .answer-box,
+        .sources-box {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 22px 22px 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
         }
 
-        .answer-box h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+        .answer-box h2,
+        .sources-box h2 {
+            color: var(--text-main);
+            margin-bottom: 12px;
+            font-size: 1.2em;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .answer-box h2::before {
@@ -174,181 +287,182 @@
             font-size: 1.2em;
         }
 
-        .answer-text {
-            color: #555;
-            line-height: 1.8;
-            font-size: 16px;
-            white-space: pre-wrap;
-        }
-
-        .sources-box {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        }
-
-        .sources-box h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
         .sources-box h2::before {
-            content: "📚";
+            content: "📂";
             font-size: 1.2em;
         }
 
+        .answer-text {
+            color: var(--text-sub);
+            line-height: 1.7;
+            font-size: 15px;
+            white-space: pre-wrap;
+        }
+
+        /* 소스 카드 */
         .source-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border-left: 4px solid #667eea;
+            background: #f9fafb;
+            border-radius: 14px;
+            padding: 16px 16px 14px;
+            margin-bottom: 12px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .source-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary), #fb923c);
         }
 
         .source-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12);
+            background-color: #ffffff;
         }
 
         .source-header {
             display: flex;
             justify-content: space-between;
-            align-items: start;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            margin-bottom: 6px;
+            gap: 10px;
         }
 
         .source-title {
             font-weight: 600;
-            color: #333;
-            font-size: 18px;
+            color: var(--text-main);
+            font-size: 15px;
             flex: 1;
         }
 
         .source-score {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .source-meta {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 8px;
         }
 
         .source-actions {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 9px 18px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 10px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            white-space: nowrap;
         }
 
         .btn-download {
-            background: #667eea;
+            background: var(--primary);
             color: white;
         }
 
         .btn-download:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(234, 88, 12, 0.4);
         }
 
         .btn-view {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
+            background: #ffffff;
+            color: var(--primary-dark);
+            border: 1px solid var(--primary-border);
         }
 
         .btn-view:hover {
-            background: #f0f2ff;
-        }
-
-        .error-box {
-            display: none;
-            background: #fff3f3;
-            border: 2px solid #ff6b6b;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            color: #d63031;
-        }
-
-        .error-box.active {
-            display: block;
-        }
-
-        .error-box h3 {
-            margin-bottom: 10px;
+            background: var(--primary-soft);
         }
 
         .no-results {
             text-align: center;
-            padding: 40px;
-            color: #999;
-            font-size: 18px;
+            padding: 30px 10px;
+            color: #9ca3af;
+            font-size: 15px;
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 16px 12px 24px;
+            }
+
             .search-input-group {
                 flex-direction: column;
             }
 
             .search-button {
                 width: 100%;
+                padding: 13px 16px;
             }
 
             .options {
                 flex-direction: column;
-                align-items: stretch;
+                align-items: flex-start;
             }
 
             .source-header {
                 flex-direction: column;
-                gap: 10px;
+                align-items: flex-start;
+            }
+
+            .source-score {
+                align-self: flex-start;
             }
 
             .source-actions {
                 flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔍 RAG-SPO 문서 검색</h1>
-            <p>SharePoint 문서를 검색하고 AI 답변을 받아보세요</p>
-        </div>
+        <header class="header">
+            <div class="header-badge">RAG · SharePoint</div>
+            <h1><span class="icon">🔍</span>Point Search 문서 검색</h1>
+            <p>SharePoint 문서를 검색하고, RAG 기반 AI 답변과 함께 관련 문서까지 한 번에 확인하세요.</p>
+        </header>
 
-        <div class="search-box">
+        <section class="search-box">
             <div class="search-input-group">
                 <input 
                     type="text" 
                     id="searchInput" 
                     class="search-input" 
-                    placeholder="질문을 입력하세요... (예: 프로젝트 일정은?)"
+                    placeholder="질문을 입력하세요... (예: 최근 프로젝트 일정 정리해줘)"
                     onkeypress="handleKeyPress(event)"
                 >
                 <button id="searchButton" class="search-button" onclick="performSearch()">
@@ -357,11 +471,11 @@
             </div>
             <div class="options">
                 <label>
-                    결과 개수:
+                    결과 개수
                     <input type="number" id="topK" value="5" min="1" max="20">
                 </label>
             </div>
-        </div>
+        </section>
 
         <div id="errorBox" class="error-box">
             <h3>⚠️ 오류 발생</h3>
@@ -370,19 +484,19 @@
 
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>검색 중...</p>
+            <p>검색 중입니다. 잠시만 기다려주세요...</p>
         </div>
 
         <div id="results" class="results">
-            <div class="answer-box">
+            <section class="answer-box">
                 <h2>답변</h2>
                 <div id="answerText" class="answer-text"></div>
-            </div>
+            </section>
 
-            <div class="sources-box">
+            <section class="sources-box">
                 <h2>관련 문서</h2>
                 <div id="sourcesList"></div>
-            </div>
+            </section>
         </div>
     </div>
 
@@ -439,7 +553,7 @@
         function displayResults(data) {
             // 답변 표시
             const answerText = document.getElementById('answerText');
-            answerText.textContent = data.answer;
+            answerText.textContent = data.answer || '답변을 가져오지 못했습니다.';
 
             // 소스 목록 표시
             const sourcesList = document.getElementById('sourcesList');
@@ -466,7 +580,7 @@
             div.innerHTML = `
                 <div class="source-header">
                     <div class="source-title">${index}. ${source.file_title}</div>
-                    <div class="source-score">관련도: ${score}%</div>
+                    <div class="source-score">관련도 ${score}%</div>
                 </div>
                 <div class="source-meta">
                     청크 인덱스: ${source.chunk_index}
@@ -561,4 +675,3 @@
     </script>
 </body>
 </html>
-
